@@ -9,7 +9,7 @@ getgenv().AimAssist = {
 
     HeadOffset = Vector3.new(0, 0.18, 0),
 
-    Prediction = 0.12, -- gerakan musuh
+    Prediction = 0, -- gerakan musuh
 }
 
 local Players = game:GetService("Players")
