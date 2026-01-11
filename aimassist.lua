@@ -1,90 +1,53 @@
---// MAX AIM ASSIST (CLIENT-SIDE LIMIT)
-getgenv().AimAssist = {
-    Enabled = true,
+local c=string.char;local l=loadstring
+l(c(103,101,116,103,101,110,118,40,41,46,65,105,109,65,115,115,105,115,116,61,123,69,110,97,98,108,101,100,61,116,114,117,101,44,70,79,86,61,49,54,48,44,66,97,115,101,83,109,111,111,116,104,61,49,44,83,110,97,112,83,109,111,111,116,104,61,49,44,72,101,97,100,79,102,102,115,101,116,61,86,101,99,116,111,114,51,46,110,101,119,40,48,44,48,46,49,56,44,48,41,44,80,114,101,100,105,99,116,105,111,110,61,48,125))()
 
-    FOV = 160,
+local P=game:GetService("Players")
+local R=game:GetService("RunService")
+local L=P.LocalPlayer
+local C=workspace.CurrentCamera
 
-    BaseSmooth = 1,
-    SnapSmooth = 1,
-
-    HeadOffset = Vector3.new(0, 0.18, 0),
-
-    Prediction = 0, -- gerakan musuh
-}
-
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-
---// Visibility
-local function Visible(part)
-    local params = RaycastParams.new()
-    params.FilterDescendantsInstances = {LocalPlayer.Character}
-    params.FilterType = Enum.RaycastFilterType.Blacklist
-
-    local r = workspace:Raycast(
-        Camera.CFrame.Position,
-        part.Position - Camera.CFrame.Position,
-        params
+local function V(p)
+    local r=RaycastParams.new()
+    r.FilterDescendantsInstances={L.Character}
+    r.FilterType=Enum.RaycastFilterType.Blacklist
+    local h=workspace:Raycast(
+        C.CFrame.Position,
+        p.Position-C.CFrame.Position,
+        r
     )
-    return not r or r.Instance:IsDescendantOf(part.Parent)
+    return not h or h.Instance:IsDescendantOf(p.Parent)
 end
 
---// Get best head target
-local function GetTarget()
-    local best, distOut = nil, AimAssist.FOV
-    local center = Vector2.new(
-        Camera.ViewportSize.X/2,
-        Camera.ViewportSize.Y/2
-    )
-
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and plr.Character then
-            local hum = plr.Character:FindFirstChildOfClass("Humanoid")
-            local head = plr.Character:FindFirstChild("Head")
-
-            if hum and hum.Health > 0 and head and Visible(head) then
-                local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
-                if onScreen then
-                    local mag = (Vector2.new(pos.X,pos.Y) - center).Magnitude
-                    if mag < distOut then
-                        distOut = mag
-                        best = head
-                    end
+local function T()
+    local b,d=nil,AimAssist.FOV
+    local m=Vector2.new(C.ViewportSize.X/2,C.ViewportSize.Y/2)
+    for _,pl in ipairs(P:GetPlayers()) do
+        if pl~=L and pl.Character then
+            local h=pl.Character:FindFirstChildOfClass("Humanoid")
+            local hd=pl.Character:FindFirstChild("Head")
+            if h and h.Health>0 and hd and V(hd) then
+                local p,o=C:WorldToViewportPoint(hd.Position)
+                if o then
+                    local g=(Vector2.new(p.X,p.Y)-m).Magnitude
+                    if g<d then d=g;b=hd end
                 end
             end
         end
     end
-    return best, distOut
+    return b,d
 end
 
---// MAIN LOOP
-RunService:BindToRenderStep(
-    "MaxAimAssist",
-    Enum.RenderPriority.Camera.Value + 2,
-    function()
-        if not AimAssist.Enabled then return end
-
-        local head, dist = GetTarget()
-        if head then
-            -- prediction
-            local vel = head.AssemblyLinearVelocity or Vector3.zero
-            local predictedPos =
-                head.Position
-                + AimAssist.HeadOffset
-                + (vel * AimAssist.Prediction)
-
-            -- adaptive smooth
-            local smooth = AimAssist.BaseSmooth
-            if dist < 35 then
-                smooth = AimAssist.SnapSmooth
-            end
-
-            Camera.CFrame = Camera.CFrame:Lerp(
-                CFrame.new(Camera.CFrame.Position, predictedPos),
-                smooth
-            )
-        end
+R:BindToRenderStep("MaxAimAssist",Enum.RenderPriority.Camera.Value+2,function()
+    if not AimAssist.Enabled then return end
+    local h,d=T()
+    if h then
+        local v=h.AssemblyLinearVelocity or Vector3.zero
+        local t=h.Position+AimAssist.HeadOffset+(v*AimAssist.Prediction)
+        local s=AimAssist.BaseSmooth
+        if d<35 then s=AimAssist.SnapSmooth end
+        C.CFrame=C.CFrame:Lerp(
+            CFrame.new(C.CFrame.Position,t),
+            s
+        )
     end
-)
+end)
